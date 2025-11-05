@@ -1097,6 +1097,22 @@
                 flex-wrap: wrap;
             }
         }
+
+        /* Стили для подсказок перевода */
+        .translation-hint {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .use-translation-btn:hover {
+            background: #3241cc !important;
+            transform: scale(1.05);
+            transition: all 0.2s;
+        }
     </style>
 </head>
 <body>
@@ -1417,8 +1433,8 @@
         // Данные приложения
         let sets = JSON.parse(localStorage.getItem('thinkSmileSets')) || [];
         let currentSetId = null;
-        let currentMode = 'cards'; // 'cards', 'study' или 'stats'
-        let currentViewMode = 'cards'; // 'cards' или 'list'
+        let currentMode = 'cards';
+        let currentViewMode = 'cards';
         let currentQuestionIndex = 0;
         let studyQuestions = [];
         let currentStudyType = 'mixed';
@@ -1437,6 +1453,13 @@
         let currentExportFormat = 'json';
         let currentImportFormat = 'json';
 
+        // Переводчик Yandex API
+        const TRANSLATE_API_URL = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=';
+        let translationCache = JSON.parse(localStorage.getItem('thinkSmileTranslationCache')) || {};
+
+        // Готовые наборы (будут загружены из JSON)
+        let predefinedSets = [];
+
         // Алгоритм интервальных повторений
         const SRSStages = {
             0: { name: 'Новое', interval: 1, factor: 2.5 },
@@ -1446,79 +1469,59 @@
             4: { name: 'Усвоено', interval: 7, factor: 1.5 }
         };
 
-        // Готовые наборы слов
-        const predefinedSets = [
-            {
-                id: 'predefined_top100',
-                name: 'Топ-100 английских слов',
-                predefined: true,
-                cards: [
-                    { term: 'the', definition: 'определенный артикль', transcription: '[ðə]' },
-                    { term: 'be', definition: 'быть', transcription: '[biː]' },
-                    { term: 'to', definition: 'к, в', transcription: '[tuː]' },
-                    { term: 'of', definition: 'из, от', transcription: '[ɒv]' },
-                    { term: 'and', definition: 'и', transcription: '[ænd]' },
-                    { term: 'a', definition: 'неопределенный артикль', transcription: '[ə]' },
-                    { term: 'in', definition: 'в', transcription: '[ɪn]' },
-                    { term: 'that', definition: 'тот, что', transcription: '[ðæt]' },
-                    { term: 'have', definition: 'иметь', transcription: '[hæv]' },
-                    { term: 'I', definition: 'я', transcription: '[aɪ]' },
-                    { term: 'it', definition: 'оно, это', transcription: '[ɪt]' },
-                    { term: 'for', definition: 'для', transcription: '[fɔːr]' },
-                    { term: 'not', definition: 'не', transcription: '[nɒt]' },
-                    { term: 'on', definition: 'на', transcription: '[ɒn]' },
-                    { term: 'with', definition: 'с', transcription: '[wɪð]' },
-                    { term: 'he', definition: 'он', transcription: '[hiː]' },
-                    { term: 'as', definition: 'как, в качестве', transcription: '[æz]' },
-                    { term: 'you', definition: 'ты, вы', transcription: '[juː]' },
-                    { term: 'do', definition: 'делать', transcription: '[duː]' },
-                    { term: 'at', definition: 'у, в', transcription: '[æt]' }
-                ]
-            },
-            {
-                id: 'predefined_food',
-                name: 'Еда и напитки',
-                predefined: true,
-                cards: [
-                    { term: 'apple', definition: 'яблоко', transcription: '[ˈæp.əl]' },
-                    { term: 'banana', definition: 'банан', transcription: '[bəˈnɑː.nə]' },
-                    { term: 'orange', definition: 'апельсин', transcription: '[ˈɒr.ɪndʒ]' },
-                    { term: 'bread', definition: 'хлеб', transcription: '[bred]' },
-                    { term: 'water', definition: 'вода', transcription: '[ˈwɔː.tər]' },
-                    { term: 'coffee', definition: 'кофе', transcription: '[ˈkɒf.i]' },
-                    { term: 'tea', definition: 'чай', transcription: '[tiː]' },
-                    { term: 'milk', definition: 'молоко', transcription: '[mɪlk]' },
-                    { term: 'meat', definition: 'мясо', transcription: '[miːt]' },
-                    { term: 'fish', definition: 'рыба', transcription: '[fɪʃ]' },
-                    { term: 'vegetables', definition: 'овощи', transcription: '[ˈvedʒ.tə.bəlz]' },
-                    { term: 'fruit', definition: 'фрукты', transcription: '[fruːt]' },
-                    { term: 'rice', definition: 'рис', transcription: '[raɪs]' },
-                    { term: 'pasta', definition: 'паста', transcription: '[ˈpæs.tə]' },
-                    { term: 'cheese', definition: 'сыр', transcription: '[tʃiːz]' }
-                ]
-            },
-            {
-                id: 'predefined_family',
-                name: 'Семья и отношения',
-                predefined: true,
-                cards: [
-                    { term: 'family', definition: 'семья', transcription: '[ˈfæm.əl.i]' },
-                    { term: 'mother', definition: 'мать', transcription: '[ˈmʌð.ər]' },
-                    { term: 'father', definition: 'отец', transcription: '[ˈfɑː.ðər]' },
-                    { term: 'parents', definition: 'родители', transcription: '[ˈpeə.rənts]' },
-                    { term: 'brother', definition: 'брат', transcription: '[ˈbrʌð.ər]' },
-                    { term: 'sister', definition: 'сестра', transcription: '[ˈsɪs.tər]' },
-                    { term: 'son', definition: 'сын', transcription: '[sʌn]' },
-                    { term: 'daughter', definition: 'дочь', transcription: '[ˈdɔː.tər]' },
-                    { term: 'children', definition: 'дети', transcription: '[ˈtʃɪl.drən]' },
-                    { term: 'grandmother', definition: 'бабушка', transcription: '[ˈɡræn.mʌð.ər]' },
-                    { term: 'grandfather', definition: 'дедушка', transcription: '[ˈɡræn.fɑː.ðər]' },
-                    { term: 'friend', definition: 'друг', transcription: '[frend]' },
-                    { term: 'husband', definition: 'муж', transcription: '[ˈhʌz.bənd]' },
-                    { term: 'wife', definition: 'жена', transcription: '[waɪf]' }
-                ]
-            }
+        // Функция для загрузки готовых наборов из JSON
+       // Функция для загрузки готовых наборов из JSON
+async function loadPredefinedSets() {
+    try {
+        // Пробуем разные пути
+        const paths = [
+            './predefined-sets.json',
+            'predefined-sets.json',
+            '/predefined-sets.json'
         ];
+        
+        let response;
+        for (const path of paths) {
+            try {
+                response = await fetch(path);
+                if (response.ok) break;
+            } catch (e) {
+                console.log(`Не удалось загрузить по пути: ${path}`);
+            }
+        }
+        
+        if (!response || !response.ok) {
+            throw new Error('Не удалось загрузить готовые наборы');
+        }
+        
+        const data = await response.json();
+        predefinedSets = data.sets;
+        
+        console.log('Готовые наборы загружены:', predefinedSets.length);
+    } catch (error) {
+        console.error('Ошибка загрузки готовых наборов:', error);
+        loadFallbackSets();
+    }
+}
+
+        // Резервные наборы на случай ошибки загрузки
+        function loadFallbackSets() {
+            predefinedSets = [
+                {
+                    id: 'predefined_basic',
+                    name: 'Базовые слова',
+                    predefined: true,
+                    cards: [
+                        { term: 'hello', definition: 'привет', transcription: '[həˈləʊ]' },
+                        { term: 'goodbye', definition: 'до свидания', transcription: '[ɡʊdˈbaɪ]' },
+                        { term: 'thank you', definition: 'спасибо', transcription: '[ˈθæŋk juː]' },
+                        { term: 'please', definition: 'пожалуйста', transcription: '[pliːz]' },
+                        { term: 'yes', definition: 'да', transcription: '[jes]' },
+                        { term: 'no', definition: 'нет', transcription: '[nəʊ]' }
+                    ]
+                }
+            ];
+        }
 
         // Элементы DOM
         const setsList = document.getElementById('setsList');
@@ -1621,6 +1624,8 @@
             applyTheme();
             renderSets();
             setupEventListeners();
+            setupTranslationHints();
+            loadPredefinedSets();
             initPWA();
             
             // Если есть наборы, выбираем первый
@@ -1856,6 +1861,104 @@
             });
         }
 
+        // Функции для переводчика
+        async function getTranslation(word) {
+            if (!word || word.trim().length === 0) return '';
+            
+            const cleanWord = word.trim().toLowerCase();
+            
+            // Проверяем кэш
+            if (translationCache[cleanWord]) {
+                return translationCache[cleanWord];
+            }
+            
+            try {
+                const response = await fetch(`${TRANSLATE_API_URL}${encodeURIComponent(cleanWord)}`);
+                const data = await response.json();
+                
+                if (data && data[0] && data[0][0] && data[0][0][0]) {
+                    const translation = data[0][0][0];
+                    translationCache[cleanWord] = translation;
+                    saveTranslationCache();
+                    return translation;
+                }
+            } catch (error) {
+                console.error('Ошибка перевода:', error);
+            }
+            
+            return '';
+        }
+
+        function showTranslationHint(inputElement, translation) {
+            // Удаляем старую подсказку если есть
+            const existingHint = inputElement.parentNode.querySelector('.translation-hint');
+            if (existingHint) {
+                existingHint.remove();
+            }
+            
+            if (translation) {
+                const hintElement = document.createElement('div');
+                hintElement.className = 'translation-hint';
+                hintElement.innerHTML = `
+                    <div style="font-size: 12px; color: var(--primary); margin-top: 5px; padding: 5px 10px; background: var(--primary-light); border-radius: 4px; border-left: 3px solid var(--primary);">
+                        <strong>Перевод:</strong> ${translation}
+                        <button class="use-translation-btn" style="margin-left: 10px; background: var(--primary); color: white; border: none; padding: 2px 8px; border-radius: 3px; font-size: 11px; cursor: pointer;">Использовать</button>
+                    </div>
+                `;
+                
+                inputElement.parentNode.appendChild(hintElement);
+                
+                // Обработчик для кнопки "Использовать"
+                const useBtn = hintElement.querySelector('.use-translation-btn');
+                useBtn.addEventListener('click', () => {
+                    inputElement.value = translation;
+                    hintElement.remove();
+                });
+                
+                // Автоматическое скрытие подсказки через 10 секунд
+                setTimeout(() => {
+                    if (hintElement.parentNode) {
+                        hintElement.remove();
+                    }
+                }, 10000);
+            }
+        }
+
+        function setupTranslationHints() {
+            const cardTermInput = document.getElementById('cardTerm');
+            const cardDefinitionInput = document.getElementById('cardDefinition');
+            
+            // Дебаунс для избежания частых запросов
+            let translationTimeout;
+            
+            cardTermInput.addEventListener('input', function() {
+                clearTimeout(translationTimeout);
+                const word = this.value.trim();
+                
+                if (word.length > 2 && /^[a-zA-Z\s]+$/.test(word)) {
+                    translationTimeout = setTimeout(async () => {
+                        const translation = await getTranslation(word);
+                        showTranslationHint(cardDefinitionInput, translation);
+                    }, 800);
+                }
+            });
+            
+            // Очистка подсказки при закрытии модального окна
+            const closeCreateCardModal = document.getElementById('closeCreateCardModal');
+            const cancelCreateCard = document.getElementById('cancelCreateCard');
+            
+            [closeCreateCardModal, cancelCreateCard].forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const hints = document.querySelectorAll('.translation-hint');
+                    hints.forEach(hint => hint.remove());
+                });
+            });
+        }
+
+        function saveTranslationCache() {
+            localStorage.setItem('thinkSmileTranslationCache', JSON.stringify(translationCache));
+        }
+
         // PWA функциональность
         function initPWA() {
             if ('serviceWorker' in navigator) {
@@ -1923,6 +2026,13 @@
 
         // Функции для работы с наборами
         function createSet(name) {
+            // Проверяем на дубликаты
+            const existingSet = sets.find(set => set.name.toLowerCase() === name.toLowerCase());
+            if (existingSet) {
+                showNotification('Набор с таким названием уже существует', 'error');
+                return;
+            }
+            
             const newSet = {
                 id: Date.now().toString(),
                 name: name,
@@ -2604,28 +2714,38 @@
         // Функция для воспроизведения аудио слова
         function playWordAudio(word) {
             if (word && speechSynthesis) {
-                // Останавливаем предыдущее воспроизведение
-                speechSynthesis.cancel();
-                
-                const utterance = new SpeechSynthesisUtterance(word);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.8;
-                utterance.pitch = 1;
-                utterance.volume = 1;
-                
-                // Пытаемся найти британский акцент
-                const voices = speechSynthesis.getVoices();
-                const englishVoice = voices.find(voice => 
-                    voice.lang.includes('en') && voice.name.includes('British')
-                ) || voices.find(voice => 
-                    voice.lang.includes('en')
-                );
-                
-                if (englishVoice) {
-                    utterance.voice = englishVoice;
+                try {
+                    // Останавливаем предыдущее воспроизведение
+                    speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(word);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1;
+                    utterance.volume = 1;
+                    
+                    utterance.onerror = function(event) {
+                        console.error('Ошибка воспроизведения:', event);
+                        showNotification('Ошибка воспроизведения аудио', 'error');
+                    };
+                    
+                    // Пытаемся найти британский акцент
+                    const voices = speechSynthesis.getVoices();
+                    const englishVoice = voices.find(voice => 
+                        voice.lang.includes('en') && voice.name.includes('British')
+                    ) || voices.find(voice => 
+                        voice.lang.includes('en')
+                    );
+                    
+                    if (englishVoice) {
+                        utterance.voice = englishVoice;
+                    }
+                    
+                    speechSynthesis.speak(utterance);
+                } catch (error) {
+                    console.error('Ошибка инициализации аудио:', error);
+                    showNotification('Ошибка воспроизведения аудио', 'error');
                 }
-                
-                speechSynthesis.speak(utterance);
             }
         }
 
@@ -2962,6 +3082,21 @@
             if (cardId) {
                 updateCardStats(currentSetId, cardId, isCorrect);
             }
+            
+            // Автопереход к следующему вопросу через 3 секунды (кроме SRS режима)
+            if (!studyQuestions[currentQuestionIndex].type.includes('srs')) {
+                setTimeout(autoNextQuestion, 3000);
+            }
+        }
+
+        function autoNextQuestion() {
+            if (currentQuestionIndex < studyQuestions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion();
+            } else {
+                switchMode('cards');
+                showNotification('Сессия завершена! 🎊', 'success');
+            }
         }
 
         function checkTypingAnswerFunc() {
@@ -2982,7 +3117,7 @@
                 updateCardStats(currentSetId, studyQuestions[currentQuestionIndex].cardId, isCorrect);
             }
             
-            // Переходим к следующему вопросу через 1.5 секунды
+            // Автопереход к следующему вопросу через 1.5 секунды
             setTimeout(() => {
                 if (currentQuestionIndex < studyQuestions.length - 1) {
                     currentQuestionIndex++;
@@ -2997,13 +3132,24 @@
         function playAudioWord() {
             const currentWord = studyQuestions[currentQuestionIndex].audioWord;
             if (currentWord && speechSynthesis) {
-                // Останавливаем предыдущее воспроизведение
-                speechSynthesis.cancel();
-                
-                const utterance = new SpeechSynthesisUtterance(currentWord);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.8;
-                speechSynthesis.speak(utterance);
+                try {
+                    // Останавливаем предыдущее воспроизведение
+                    speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(currentWord);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.8;
+                    
+                    utterance.onerror = function(event) {
+                        console.error('Ошибка воспроизведения:', event);
+                        showNotification('Ошибка воспроизведения аудио', 'error');
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                } catch (error) {
+                    console.error('Ошибка инициализации аудио:', error);
+                    showNotification('Ошибка воспроизведения аудио', 'error');
+                }
             }
         }
 
@@ -3270,11 +3416,28 @@
         }
 
         function handleJsonImport(fileContent) {
-            const data = JSON.parse(fileContent);
-            
-            // Проверяем формат данных
-            if (Array.isArray(data) && data.length > 0 && data[0].name && Array.isArray(data[0].cards)) {
-                importSetData = data[0]; // Берем первый набор из файла
+            try {
+                const data = JSON.parse(fileContent);
+                
+                // Более строгая проверка формата
+                if (!Array.isArray(data) || data.length === 0) {
+                    throw new Error('Файл должен содержать массив наборов');
+                }
+                
+                const firstSet = data[0];
+                if (!firstSet.name || !Array.isArray(firstSet.cards)) {
+                    throw new Error('Неверный формат данных набора');
+                }
+                
+                // Проверяем структуру карточек
+                if (firstSet.cards.length > 0) {
+                    const firstCard = firstSet.cards[0];
+                    if (!firstCard.term || !firstCard.definition) {
+                        throw new Error('Карточки должны содержать term и definition');
+                    }
+                }
+                
+                importSetData = firstSet;
                 
                 // Показываем превью
                 previewSetName.textContent = importSetData.name;
@@ -3289,8 +3452,8 @@
                 importSetName.value = importSetData.name + ' (импорт)';
                 validateImportName();
                 importFileWarning.style.display = 'none';
-            } else {
-                throw new Error('Файл должен содержать корректные данные набора карточек');
+            } catch (error) {
+                throw new Error('Неверный формат JSON файла: ' + error.message);
             }
         }
 

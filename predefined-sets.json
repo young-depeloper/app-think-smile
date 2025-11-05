@@ -1,0 +1,133 @@
+{
+  "sets": [
+    {
+      "id": "predefined_top100",
+      "name": "Топ-100 английских слов",
+      "predefined": true,
+      "cards": [
+        { "term": "the", "definition": "определенный артикль", "transcription": "[ðə]" },
+        { "term": "be", "definition": "быть", "transcription": "[biː]" },
+        { "term": "to", "definition": "к, в", "transcription": "[tuː]" },
+        { "term": "of", "definition": "из, от", "transcription": "[ɒv]" },
+        { "term": "and", "definition": "и", "transcription": "[ænd]" },
+        { "term": "a", "definition": "неопределенный артикль", "transcription": "[ə]" },
+        { "term": "in", "definition": "в", "transcription": "[ɪn]" },
+        { "term": "that", "definition": "тот, что", "transcription": "[ðæt]" },
+        { "term": "have", "definition": "иметь", "transcription": "[hæv]" },
+        { "term": "I", "definition": "я", "transcription": "[aɪ]" },
+        { "term": "it", "definition": "оно, это", "transcription": "[ɪt]" },
+        { "term": "for", "definition": "для", "transcription": "[fɔːr]" },
+        { "term": "not", "definition": "не", "transcription": "[nɒt]" },
+        { "term": "on", "definition": "на", "transcription": "[ɒn]" },
+        { "term": "with", "definition": "с", "transcription": "[wɪð]" },
+        { "term": "he", "definition": "он", "transcription": "[hiː]" },
+        { "term": "as", "definition": "как, в качестве", "transcription": "[æz]" },
+        { "term": "you", "definition": "ты, вы", "transcription": "[juː]" },
+        { "term": "do", "definition": "делать", "transcription": "[duː]" },
+        { "term": "at", "definition": "у, в", "transcription": "[æt]" }
+      ]
+    },
+    {
+      "id": "predefined_food",
+      "name": "Еда и напитки",
+      "predefined": true,
+      "cards": [
+        { "term": "apple", "definition": "яблоко", "transcription": "[ˈæp.əl]" },
+        { "term": "banana", "definition": "банан", "transcription": "[bəˈnɑː.nə]" },
+        { "term": "orange", "definition": "апельсин", "transcription": "[ˈɒr.ɪndʒ]" },
+        { "term": "bread", "definition": "хлеб", "transcription": "[bred]" },
+        { "term": "water", "definition": "вода", "transcription": "[ˈwɔː.tər]" },
+        { "term": "coffee", "definition": "кофе", "transcription": "[ˈkɒf.i]" },
+        { "term": "tea", "definition": "чай", "transcription": "[tiː]" },
+        { "term": "milk", "definition": "молоко", "transcription": "[mɪlk]" },
+        { "term": "meat", "definition": "мясо", "transcription": "[miːt]" },
+        { "term": "fish", "definition": "рыба", "transcription": "[fɪʃ]" },
+        { "term": "vegetables", "definition": "овощи", "transcription": "[ˈvedʒ.tə.bəlz]" },
+        { "term": "fruit", "definition": "фрукты", "transcription": "[fruːt]" },
+        { "term": "rice", "definition": "рис", "transcription": "[raɪs]" },
+        { "term": "pasta", "definition": "паста", "transcription": "[ˈpæs.tə]" },
+        { "term": "cheese", "definition": "сыр", "transcription": "[tʃiːz]" }
+      ]
+    },
+    {
+      "id": "predefined_family",
+      "name": "Семья и отношения",
+      "predefined": true,
+      "cards": [
+        { "term": "family", "definition": "семья", "transcription": "[ˈfæm.əl.i]" },
+        { "term": "mother", "definition": "мать", "transcription": "[ˈmʌð.ər]" },
+        { "term": "father", "definition": "отец", "transcription": "[ˈfɑː.ðər]" },
+        { "term": "parents", "definition": "родители", "transcription": "[ˈpeə.rənts]" },
+        { "term": "brother", "definition": "брат", "transcription": "[ˈbrʌð.ər]" },
+        { "term": "sister", "definition": "сестра", "transcription": "[ˈsɪs.tər]" },
+        { "term": "son", "definition": "сын", "transcription": "[sʌn]" },
+        { "term": "daughter", "definition": "дочь", "transcription": "[ˈdɔː.tər]" },
+        { "term": "children", "definition": "дети", "transcription": "[ˈtʃɪl.drən]" },
+        { "term": "grandmother", "definition": "бабушка", "transcription": "[ˈɡræn.mʌð.ər]" },
+        { "term": "grandfather", "definition": "дедушка", "transcription": "[ˈɡræn.fɑː.ðər]" },
+        { "term": "friend", "definition": "друг", "transcription": "[frend]" },
+        { "term": "husband", "definition": "муж", "transcription": "[ˈhʌz.bənd]" },
+        { "term": "wife", "definition": "жена", "transcription": "[waɪf]" }
+      ]
+    },
+    {
+      "id": "predefined_animals",
+      "name": "Животные",
+      "predefined": true,
+      "cards": [
+        { "term": "dog", "definition": "собака", "transcription": "[dɒɡ]" },
+        { "term": "cat", "definition": "кошка", "transcription": "[kæt]" },
+        { "term": "bird", "definition": "птица", "transcription": "[bɜːd]" },
+        { "term": "fish", "definition": "рыба", "transcription": "[fɪʃ]" },
+        { "term": "horse", "definition": "лошадь", "transcription": "[hɔːs]" },
+        { "term": "cow", "definition": "корова", "transcription": "[kaʊ]" },
+        { "term": "sheep", "definition": "овца", "transcription": "[ʃiːp]" },
+        { "term": "pig", "definition": "свинья", "transcription": "[pɪɡ]" },
+        { "term": "elephant", "definition": "слон", "transcription": "[ˈel.ɪ.fənt]" },
+        { "term": "lion", "definition": "лев", "transcription": "[ˈlaɪ.ən]" },
+        { "term": "tiger", "definition": "тигр", "transcription": "[ˈtaɪ.ɡər]" },
+        { "term": "bear", "definition": "медведь", "transcription": "[beər]" },
+        { "term": "rabbit", "definition": "кролик", "transcription": "[ˈræb.ɪt]" },
+        { "term": "deer", "definition": "олень", "transcription": "[dɪər]" }
+      ]
+    },
+    {
+      "id": "predefined_travel",
+      "name": "Путешествия",
+      "predefined": true,
+      "cards": [
+        { "term": "passport", "definition": "паспорт", "transcription": "[ˈpɑː.spɔːt]" },
+        { "term": "ticket", "definition": "билет", "transcription": "[ˈtɪk.ɪt]" },
+        { "term": "hotel", "definition": "отель", "transcription": "[həʊˈtel]" },
+        { "term": "airport", "definition": "аэропорт", "transcription": "[ˈeə.pɔːt]" },
+        { "term": "station", "definition": "станция", "transcription": "[ˈsteɪ.ʃən]" },
+        { "term": "train", "definition": "поезд", "transcription": "[treɪn]" },
+        { "term": "bus", "definition": "автобус", "transcription": "[bʌs]" },
+        { "term": "car", "definition": "машина", "transcription": "[kɑːr]" },
+        { "term": "map", "definition": "карта", "transcription": "[mæp]" },
+        { "term": "suitcase", "definition": "чемодан", "transcription": "[ˈsuːt.keɪs]" },
+        { "term": "travel", "definition": "путешествовать", "transcription": "[ˈtræv.əl]" },
+        { "term": "journey", "definition": "поездка", "transcription": "[ˈdʒɜː.ni]" },
+        { "term": "destination", "definition": "назначение", "transcription": "[ˌdes.tɪˈneɪ.ʃən]" },
+        { "term": "tourist", "definition": "турист", "transcription": "[ˈtʊə.rɪst]" }
+      ]
+    },
+    {
+      "id": "predefined_business",
+      "name": "Бизнес английский",
+      "predefined": true,
+      "cards": [
+        { "term": "meeting", "definition": "встреча", "transcription": "[ˈmiː.tɪŋ]" },
+        { "term": "presentation", "definition": "презентация", "transcription": "[ˌprez.ənˈteɪ.ʃən]" },
+        { "term": "contract", "definition": "контракт", "transcription": "[ˈkɒn.trækt]" },
+        { "term": "deadline", "definition": "крайний срок", "transcription": "[ˈded.laɪn]" },
+        { "term": "budget", "definition": "бюджет", "transcription": "[ˈbʌdʒ.ɪt]" },
+        { "term": "profit", "definition": "прибыль", "transcription": "[ˈprɒf.ɪt]" },
+        { "term": "investment", "definition": "инвестиция", "transcription": "[ɪnˈvest.mənt]" },
+        { "term": "strategy", "definition": "стратегия", "transcription": "[ˈstræt.ə.dʒi]" },
+        { "term": "negotiation", "definition": "переговоры", "transcription": "[nɪˌɡəʊ.ʃiˈeɪ.ʃən]" },
+        { "term": "partnership", "definition": "партнерство", "transcription": "[ˈpɑːt.nə.ʃɪp]" }
+      ]
+    }
+  ]
+}
