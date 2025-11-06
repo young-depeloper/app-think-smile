@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Think&Smile - Изучение слов</title>
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='85' font-size='80'>🧠</text></svg>">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4255ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -134,6 +135,7 @@
             margin-top: 20px;
         }
 
+        /* ИСПРАВЛЕНИЕ 1: Стили для длинных названий наборов */
         .set-item {
             padding: 12px 16px;
             border-radius: 8px;
@@ -141,9 +143,10 @@
             cursor: pointer;
             transition: background-color 0.2s;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             position: relative;
             border: 1px solid var(--border-color);
+            min-height: 60px;
         }
 
         .set-item:hover {
@@ -166,16 +169,34 @@
             align-items: center;
             justify-content: center;
             font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .set-name {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 8px;
+        }
+
+        .set-count {
+            font-size: 12px;
+            color: var(--gray);
+            margin-right: 10px;
+            flex-shrink: 0;
         }
 
         .set-actions {
-            margin-left: auto;
             display: flex;
             gap: 5px;
             opacity: 0;
             transition: opacity 0.2s;
+            flex-shrink: 0;
         }
 
+        .set-item.active .set-actions,
         .set-item:hover .set-actions {
             opacity: 1;
         }
@@ -1470,39 +1491,38 @@
         };
 
         // Функция для загрузки готовых наборов из JSON
-       // Функция для загрузки готовых наборов из JSON
-async function loadPredefinedSets() {
-    try {
-        // Пробуем разные пути
-        const paths = [
-            './predefined-sets.json',
-            'predefined-sets.json',
-            '/predefined-sets.json'
-        ];
-        
-        let response;
-        for (const path of paths) {
+        async function loadPredefinedSets() {
             try {
-                response = await fetch(path);
-                if (response.ok) break;
-            } catch (e) {
-                console.log(`Не удалось загрузить по пути: ${path}`);
+                // Пробуем разные пути
+                const paths = [
+                    './predefined-sets.json',
+                    'predefined-sets.json',
+                    '/predefined-sets.json'
+                ];
+                
+                let response;
+                for (const path of paths) {
+                    try {
+                        response = await fetch(path);
+                        if (response.ok) break;
+                    } catch (e) {
+                        console.log(`Не удалось загрузить по пути: ${path}`);
+                    }
+                }
+                
+                if (!response || !response.ok) {
+                    throw new Error('Не удалось загрузить готовые наборы');
+                }
+                
+                const data = await response.json();
+                predefinedSets = data.sets;
+                
+                console.log('Готовые наборы загружены:', predefinedSets.length);
+            } catch (error) {
+                console.error('Ошибка загрузки готовых наборов:', error);
+                loadFallbackSets();
             }
         }
-        
-        if (!response || !response.ok) {
-            throw new Error('Не удалось загрузить готовые наборы');
-        }
-        
-        const data = await response.json();
-        predefinedSets = data.sets;
-        
-        console.log('Готовые наборы загружены:', predefinedSets.length);
-    } catch (error) {
-        console.error('Ошибка загрузки готовых наборов:', error);
-        loadFallbackSets();
-    }
-}
 
         // Резервные наборы на случай ошибки загрузки
         function loadFallbackSets() {
@@ -2049,6 +2069,12 @@ async function loadPredefinedSets() {
             renderSets();
             selectSet(newSet.id);
             
+            // ИСПРАВЛЕНИЕ 2: Автоматически показываем интерфейс карточек после создания набора
+            switchMode('cards');
+            viewModeSelector.style.display = 'flex';
+            searchFilterContainer.style.display = 'block';
+            hideEmptyState();
+            
             // Показываем сообщение об успешном создании
             showNotification(`Набор "${name}" успешно создан!`, 'success');
         }
@@ -2131,8 +2157,8 @@ async function loadPredefinedSets() {
                 setItem.dataset.id = set.id;
                 setItem.innerHTML = `
                     <div class="set-icon">${set.name.charAt(0).toUpperCase()}</div>
-                    <span>${set.name}</span>
-                    <span style="margin-left: auto; font-size: 12px; color: var(--gray); margin-right: 10px;">${set.cards.length}</span>
+                    <span class="set-name">${set.name}</span>
+                    <span class="set-count">${set.cards.length}</span>
                     <div class="set-actions">
                         <button class="action-btn edit-set-btn" title="Редактировать набор">✏️</button>
                         <button class="action-btn delete-btn" title="Удалить набор">🗑️</button>
@@ -3636,6 +3662,15 @@ async function loadPredefinedSets() {
 
         function hideEmptyState() {
             emptyState.style.display = 'none';
+            if (currentMode === 'cards') {
+                if (currentViewMode === 'cards') {
+                    cardsContainer.style.display = 'grid';
+                } else {
+                    cardsList.style.display = 'flex';
+                }
+                searchFilterContainer.style.display = 'block';
+                viewModeSelector.style.display = 'flex';
+            }
         }
 
         function showNotification(message, type = 'info') {
