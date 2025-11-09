@@ -799,7 +799,23 @@
         .btn-secondary:hover {
             background-color: var(--border-color);
         }
+.export-format-btn.active,
+.import-format-btn.active {
+    background-color: var(--primary) !important;
+    color: white !important;
+    border-color: var(--primary) !important;
+}
 
+.export-format-btn,
+.import-format-btn {
+    transition: all 0.2s ease;
+}
+
+.export-format-btn:hover,
+.import-format-btn:hover {
+    background-color: var(--primary-light) !important;
+    border-color: var(--primary) !important;
+}
         .btn-danger {
             background-color: var(--danger);
             color: white;
@@ -1640,11 +1656,22 @@
         const searchResultsInfo = document.getElementById('searchResultsInfo');
 
         // Инициализация приложения
-        function init() {
+        async function init() {
             applyTheme();
             renderSets();
             setupEventListeners();
             setupTranslationHints();
+            
+            // Проверяем доступность переводчика
+            const isTranslatorAvailable = await checkTranslatorAvailability();
+            if (!isTranslatorAvailable) {
+                console.warn('Автоматический перевод недоступен');
+                // Можно показать мягкое уведомление
+                setTimeout(() => {
+                    showNotification('Автоматический перевод временно недоступен', 'info');
+                }, 2000);
+            }
+            
             loadPredefinedSets();
             initPWA();
             
@@ -1654,6 +1681,126 @@
             } else {
                 showEmptyState();
             }
+        }
+
+        // Функции для переводчика
+        async function getTranslation(word) {
+            if (!word || word.trim().length === 0) return '';
+            
+            const cleanWord = word.trim().toLowerCase();
+            
+            // Проверяем кэш
+            if (translationCache[cleanWord]) {
+                return translationCache[cleanWord];
+            }
+            
+            try {
+                const response = await fetch(`${TRANSLATE_API_URL}${encodeURIComponent(cleanWord)}`);
+                const data = await response.json();
+                
+                if (data && data[0] && data[0][0] && data[0][0][0]) {
+                    const translation = data[0][0][0];
+                    translationCache[cleanWord] = translation;
+                    saveTranslationCache();
+                    return translation;
+                }
+            } catch (error) {
+                console.error('Ошибка перевода:', error);
+            }
+            
+            return '';
+        }
+
+        function showTranslationHint(inputElement, translation) {
+            // Удаляем старую подсказку если есть
+            const existingHint = inputElement.parentNode.querySelector('.translation-hint');
+            if (existingHint) {
+                existingHint.remove();
+            }
+            
+            if (translation) {
+                const hintElement = document.createElement('div');
+                hintElement.className = 'translation-hint';
+                hintElement.innerHTML = `
+                    <div style="font-size: 14px; color: var(--primary); margin-top: 10px; padding: 12px; background: var(--primary-light); border-radius: 8px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>Автоматический перевод:</strong> 
+                            <span style="margin-left: 8px; font-style: italic;">${translation}</span>
+                        </div>
+                        <button class="use-translation-btn" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                            Использовать перевод
+                        </button>
+                    </div>
+                `;
+                
+                inputElement.parentNode.appendChild(hintElement);
+                
+                // Обработчик для кнопки "Использовать перевод"
+                const useBtn = hintElement.querySelector('.use-translation-btn');
+                useBtn.addEventListener('click', () => {
+                    inputElement.value = translation;
+                    hintElement.remove();
+                    showNotification('Перевод применен!', 'success');
+                    
+                    // Переходим к следующему полю или сохраняем
+                    if (inputElement.id === 'cardDefinition') {
+                        saveCard.focus();
+                    }
+                });
+                
+                // Автоматическое скрытие подсказки через 15 секунд
+                setTimeout(() => {
+                    if (hintElement.parentNode) {
+                        hintElement.remove();
+                    }
+                }, 15000);
+            }
+        }
+
+        function setupTranslationHints() {
+            const cardTermInput = document.getElementById('cardTerm');
+            const cardDefinitionInput = document.getElementById('cardDefinition');
+            
+            // Дебаунс для избежания частых запросов
+            let translationTimeout;
+            
+            cardTermInput.addEventListener('input', function() {
+                clearTimeout(translationTimeout);
+                const word = this.value.trim();
+                
+                // Показываем подсказку только для английских слов длиной более 2 символов
+                if (word.length > 2 && /^[a-zA-Z\s]+$/.test(word)) {
+                    translationTimeout = setTimeout(async () => {
+                        const translation = await getTranslation(word);
+                        showTranslationHint(cardDefinitionInput, translation);
+                    }, 800);
+                }
+            });
+            
+            // Очистка подсказки при закрытии модального окна
+            const closeCreateCardModal = document.getElementById('closeCreateCardModal');
+            const cancelCreateCard = document.getElementById('cancelCreateCard');
+            
+            [closeCreateCardModal, cancelCreateCard].forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const hints = document.querySelectorAll('.translation-hint');
+                    hints.forEach(hint => hint.remove());
+                });
+            });
+        }
+
+        async function checkTranslatorAvailability() {
+            try {
+                const testTranslation = await getTranslation('hello');
+                return !!testTranslation;
+            } catch (error) {
+                console.error('Переводчик недоступен:', error);
+                return false;
+            }
+        }
+
+        function saveTranslationCache() {
+            localStorage.setItem('thinkSmileTranslationCache', JSON.stringify(translationCache));
         }
 
         // Настройка обработчиков событий
@@ -1795,27 +1942,27 @@
             confirmImport.addEventListener('click', confirmImportFunc);
             
             // Кнопки форматов
-            exportFormatButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    exportFormatButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentExportFormat = btn.dataset.format;
-                    updateExportContent();
-                });
-            });
+exportFormatButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        exportFormatButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentExportFormat = btn.dataset.format;
+        updateExportContent();
+    });
+});
             
             importFormatButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    importFormatButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentImportFormat = btn.dataset.format;
-                    importFileInput.accept = currentImportFormat === 'json' ? '.json' : '.txt';
-                    importFileInput.value = ''; // Сбрасываем выбранный файл
-                    importPreview.style.display = 'none';
-                    importNameSection.style.display = 'none';
-                    confirmImport.disabled = true;
-                });
-            });
+    btn.addEventListener('click', () => {
+        importFormatButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentImportFormat = btn.dataset.format;
+        importFileInput.accept = currentImportFormat === 'json' ? '.json' : '.txt';
+        importFileInput.value = ''; // Сбрасываем выбранный файл
+        importPreview.style.display = 'none';
+        importNameSection.style.display = 'none';
+        confirmImport.disabled = true;
+    });
+});
             
             // Поиск и фильтрация
             searchInput.addEventListener('input', handleSearch);
@@ -1879,104 +2026,6 @@
                     saveCard.click();
                 }
             });
-        }
-
-        // Функции для переводчика
-        async function getTranslation(word) {
-            if (!word || word.trim().length === 0) return '';
-            
-            const cleanWord = word.trim().toLowerCase();
-            
-            // Проверяем кэш
-            if (translationCache[cleanWord]) {
-                return translationCache[cleanWord];
-            }
-            
-            try {
-                const response = await fetch(`${TRANSLATE_API_URL}${encodeURIComponent(cleanWord)}`);
-                const data = await response.json();
-                
-                if (data && data[0] && data[0][0] && data[0][0][0]) {
-                    const translation = data[0][0][0];
-                    translationCache[cleanWord] = translation;
-                    saveTranslationCache();
-                    return translation;
-                }
-            } catch (error) {
-                console.error('Ошибка перевода:', error);
-            }
-            
-            return '';
-        }
-
-        function showTranslationHint(inputElement, translation) {
-            // Удаляем старую подсказку если есть
-            const existingHint = inputElement.parentNode.querySelector('.translation-hint');
-            if (existingHint) {
-                existingHint.remove();
-            }
-            
-            if (translation) {
-                const hintElement = document.createElement('div');
-                hintElement.className = 'translation-hint';
-                hintElement.innerHTML = `
-                    <div style="font-size: 12px; color: var(--primary); margin-top: 5px; padding: 5px 10px; background: var(--primary-light); border-radius: 4px; border-left: 3px solid var(--primary);">
-                        <strong>Перевод:</strong> ${translation}
-                        <button class="use-translation-btn" style="margin-left: 10px; background: var(--primary); color: white; border: none; padding: 2px 8px; border-radius: 3px; font-size: 11px; cursor: pointer;">Использовать</button>
-                    </div>
-                `;
-                
-                inputElement.parentNode.appendChild(hintElement);
-                
-                // Обработчик для кнопки "Использовать"
-                const useBtn = hintElement.querySelector('.use-translation-btn');
-                useBtn.addEventListener('click', () => {
-                    inputElement.value = translation;
-                    hintElement.remove();
-                });
-                
-                // Автоматическое скрытие подсказки через 10 секунд
-                setTimeout(() => {
-                    if (hintElement.parentNode) {
-                        hintElement.remove();
-                    }
-                }, 10000);
-            }
-        }
-
-        function setupTranslationHints() {
-            const cardTermInput = document.getElementById('cardTerm');
-            const cardDefinitionInput = document.getElementById('cardDefinition');
-            
-            // Дебаунс для избежания частых запросов
-            let translationTimeout;
-            
-            cardTermInput.addEventListener('input', function() {
-                clearTimeout(translationTimeout);
-                const word = this.value.trim();
-                
-                if (word.length > 2 && /^[a-zA-Z\s]+$/.test(word)) {
-                    translationTimeout = setTimeout(async () => {
-                        const translation = await getTranslation(word);
-                        showTranslationHint(cardDefinitionInput, translation);
-                    }, 800);
-                }
-            });
-            
-            // Очистка подсказки при закрытии модального окна
-            const closeCreateCardModal = document.getElementById('closeCreateCardModal');
-            const cancelCreateCard = document.getElementById('cancelCreateCard');
-            
-            [closeCreateCardModal, cancelCreateCard].forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const hints = document.querySelectorAll('.translation-hint');
-                    hints.forEach(hint => hint.remove());
-                });
-            });
-        }
-
-        function saveTranslationCache() {
-            localStorage.setItem('thinkSmileTranslationCache', JSON.stringify(translationCache));
         }
 
         // PWA функциональность
@@ -3336,14 +3385,22 @@
 
         // Функции для экспорта
         function showExportModal() {
-            if (!currentSetId) {
-                showNotification('Пожалуйста, сначала выберите набор для экспорта', 'error');
-                return;
-            }
-            
-            updateExportContent();
-            exportModal.classList.add('active');
+    if (!currentSetId) {
+        showNotification('Пожалуйста, сначала выберите набор для экспорта', 'error');
+        return;
+    }
+    
+    // Устанавливаем активную кнопку формата
+    exportFormatButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.format === currentExportFormat) {
+            btn.classList.add('active');
         }
+    });
+    
+    updateExportContent();
+    exportModal.classList.add('active');
+}
 
         function updateExportContent() {
             if (!currentSetId) return;
@@ -3401,22 +3458,28 @@
         }
 
         // Функции для импорта
-        function showImportModal() {
-            importModal.classList.add('active');
-            importFileInput.value = '';
-            importPreview.style.display = 'none';
-            importNameSection.style.display = 'none';
-            importFileWarning.style.display = 'none';
-            importNameWarning.style.display = 'none';
-            confirmImport.disabled = true;
-            importSetData = null;
-            
-            // Сбрасываем формат на JSON
-            importFormatButtons.forEach(b => b.classList.remove('active'));
-            document.querySelector('.import-format-btn[data-format="json"]').classList.add('active');
-            currentImportFormat = 'json';
-            importFileInput.accept = '.json';
+       function showImportModal() {
+    importModal.classList.add('active');
+    importFileInput.value = '';
+    importPreview.style.display = 'none';
+    importNameSection.style.display = 'none';
+    importFileWarning.style.display = 'none';
+    importNameWarning.style.display = 'none';
+    confirmImport.disabled = true;
+    importSetData = null;
+    
+    // Устанавливаем активную кнопку формата
+    importFormatButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.format === currentImportFormat) {
+            btn.classList.add('active');
         }
+    });
+    
+    importFileInput.accept = currentImportFormat === 'json' ? '.json' : '.txt';
+}
+            
+        
 
         function handleFileImport(event) {
             const file = event.target.files[0];
